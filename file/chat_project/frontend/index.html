@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>تطبيق المراسلات</title>
+
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/auth.css">
+    <link rel="stylesheet" href="/css/chat.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/media.css">
+    <link rel="stylesheet" href="/css/modal.css">
+    <link rel="stylesheet" href="/css/profile.css">
+    <link rel="stylesheet" href="/css/responsive.css">
+    <link rel="stylesheet" href="/css/theme.css">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- SignalR Client Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+</head>
+
+<body>
+
+    <button class="menu-toggle" id="menu-toggle" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <div class="app-container">
+        <!-- ==================== شاشة الترحيب ==================== -->
+        <div id="welcome-screen" class="screen active">
+            <div class="welcome-wrapper">
+                <div class="welcome-box">
+                    <div class="welcome-icon"><i class="fas fa-comment-dots"></i></div>
+                    <h1>مرحباً بك</h1>
+                    <p>تواصل مع أصدقائك بسهولة وأمان</p>
+                    <div class="action-buttons">
+                        <button class="primary-btn" onclick="showScreen('login-screen')">
+                            <i class="fas fa-sign-in-alt"></i> تسجيل الدخول
+                        </button>
+                        <button class="secondary-btn" onclick="showScreen('register-screen')">
+                            <i class="fas fa-user-plus"></i> إنشاء حساب
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== شاشة تسجيل الدخول ==================== -->
+        <div id="login-screen" class="screen">
+            <div class="auth-wrapper">
+                <div class="auth-box">
+                    <div class="auth-icon"><i class="fas fa-lock"></i></div>
+                    <h2>تسجيل الدخول</h2>
+                    <div class="input-group">
+                        <span class="input-icon"><i class="fas fa-user"></i></span>
+                        <input type="text" id="login-username" placeholder="اسم المستخدم">
+                    </div>
+                    <div class="input-group">
+                        <span class="input-icon"><i class="fas fa-key"></i></span>
+                        <input type="password" id="login-password" placeholder="كلمة المرور">
+                    </div>
+                    <div id="login-error" class="error-msg"></div>
+                    <button class="primary-btn full-width" onclick="login()">
+                        <i class="fas fa-paper-plane"></i> دخول
+                    </button>
+                    <a href="#" onclick="showScreen('welcome-screen')" class="back-link">
+                        <i class="fas fa-arrow-right"></i> العودة
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== شاشة التسجيل ==================== -->
+        <div id="register-screen" class="screen">
+            <div class="auth-wrapper">
+                <div class="auth-box">
+                    <div class="auth-icon"><i class="fas fa-edit"></i></div>
+                    <h2>إنشاء حساب جديد</h2>
+                    <div class="input-group">
+                        <span class="input-icon"><i class="fas fa-user"></i></span>
+                        <input type="text" id="register-username" placeholder="اسم المستخدم">
+                    </div>
+                    <div class="input-group">
+                        <span class="input-icon"><i class="fas fa-key"></i></span>
+                        <input type="password" id="register-password" placeholder="كلمة المرور (6 أحرف على الأقل)">
+                    </div>
+                    <div id="register-error" class="error-msg"></div>
+                    <button class="primary-btn full-width" onclick="register()">
+                        <i class="fas fa-check-circle"></i> تسجيل
+                    </button>
+                    <a href="#" onclick="showScreen('welcome-screen')" class="back-link">
+                        <i class="fas fa-arrow-right"></i> العودة
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== شاشة الدردشة ==================== -->
+        <div id="chat-screen" class="screen">
+            <div class="chat-layout">
+                <!-- الشريط الجانبي -->
+                <div class="sidebar" id="sidebar">
+                    <div class="resize-handle" id="resize-handle"></div>
+                    <div class="profile-section">
+                        <div class="user-info" onclick="openProfile()" style="cursor: pointer;">
+                            <div class="user-avatar-small">
+                                <div id="sidebar-avatar-initial" class="avatar-initial">U</div>
+                            </div>
+                            <div class="user-details">
+                                <span class="user-name" id="current-username"></span>
+                                <span class="user-status" id="user-status">
+                                    <i class="fas fa-circle" style="font-size: 8px; color: #4caf50;"></i> متصل
+                                </span>
+                            </div>
+                        </div>
+                        <div class="header-actions">
+                            <button class="logout-icon" onclick="logout()" title="تسجيل الخروج">
+                                <i class="fas fa-sign-out-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="search-section">
+                        <span class="search-icon"><i class="fas fa-search"></i></span>
+                        <input type="text" id="search-user" placeholder="بحث عن مستخدم..." oninput="loadUsers()">
+                    </div>
+                    <div class="users-list" id="users-list">
+                        <div class="loading-users"><i class="fas fa-spinner fa-pulse"></i> جاري تحميل المستخدمين...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- منطقة الدردشة -->
+                <div class="chat-area">
+                    <div id="no-chat-selected" class="empty-state">
+                        <div class="empty-icon"><i class="fas fa-comments"></i></div>
+                        <p>اختر محادثة لبدء المراسلة</p>
+                        <span class="empty-hint"><i class="fas fa-star"></i> تواصل مع أصدقائك</span>
+                    </div>
+
+                    <div id="chat-container" style="display: none; flex-direction: column; height: 100%;">
+                        <div class="chat-header">
+                            <div class="chat-header-left">
+                                <button class="back-to-chats-btn" id="back-to-chats-btn"
+                                    onclick="closeChatAndShowSidebar()" style="display: none;">
+                                    <i class="fas fa-arrow-right"></i>
+                                </button>
+                                <div class="chat-avatar" id="chat-avatar">
+                                    <div id="chat-avatar-initial" class="avatar-initial">U</div>
+                                </div>
+                                <h3 id="chat-with"></h3>
+                            </div>
+                            <button class="close-chat" onclick="closeChat()" title="إغلاق المحادثة">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="messages-container" id="messages"></div>
+                        <div id="typing-indicator" class="typing-indicator" style="display:none"></div>
+                        <div class="message-composer">
+                            <button class="attach-btn" onclick="document.getElementById('media-input').click()"
+                                title="إرفاق صورة أو فيديو">
+                                <i class="fas fa-image"></i>
+                            </button>
+                            <button class="voice-btn" id="voice-btn" title="تسجيل رسالة صوتية">
+                                <i class="fas fa-microphone"></i>
+                            </button>
+                            <textarea id="message-input" placeholder="اكتب رسالتك..." rows="1"
+                                onkeypress="if(event.key==='Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(); }"
+                                oninput="handleTyping(); autoResize(this)"></textarea>
+                            <button onclick="sendMessage()" id="send-button" class="send-btn" title="إرسال">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== شاشة الملف الشخصي ==================== -->
+        <div id="profile-screen" class="screen">
+            <div class="profile-wrapper">
+                <div class="profile-header">
+                    <button class="back-btn" onclick="showScreen('chat-screen')">
+                        <i class="fas fa-arrow-right"></i> رجوع
+                    </button>
+                    <h2>الملف الشخصي</h2>
+                </div>
+
+                <!-- معلومات الملف الشخصي -->
+                <div class="profile-info">
+                    <div class="info-row editable">
+                        <div class="info-label">
+                            <i class="fas fa-user"></i>
+                            <span>اسم المستخدم</span>
+                        </div>
+                        <div class="info-value" id="profile-username-display">-</div>
+                        <input type="text" id="profile-username-input" class="edit-input" style="display: none;"
+                            placeholder="اسم المستخدم">
+                        <button class="edit-field-btn" onclick="editField('username')"><i
+                                class="fas fa-pen"></i></button>
+                    </div>
+
+                    <div class="info-row editable">
+                        <div class="info-label">
+                            <i class="fas fa-user-tag"></i>
+                            <span>الاسم الكامل</span>
+                        </div>
+                        <div class="info-value" id="profile-fullname-display">-</div>
+                        <input type="text" id="profile-fullname-input" class="edit-input" style="display: none;"
+                            placeholder="الاسم الكامل">
+                        <button class="edit-field-btn" onclick="editField('fullname')"><i
+                                class="fas fa-pen"></i></button>
+                    </div>
+
+                    <div class="info-row editable">
+                        <div class="info-label">
+                            <i class="fas fa-file-alt"></i>
+                            <span>السيرة الذاتية</span>
+                        </div>
+                        <div class="info-value bio-text" id="profile-bio-display">-</div>
+                        <textarea id="profile-bio-input" class="edit-input" style="display: none;" rows="3"
+                            placeholder="اكتب سيرتك الذاتية..."></textarea>
+                        <button class="edit-field-btn" onclick="editField('bio')"><i class="fas fa-pen"></i></button>
+                    </div>
+
+                    <div class="info-row editable">
+                        <div class="info-label">
+                            <i class="fas fa-phone"></i>
+                            <span>رقم الهاتف</span>
+                        </div>
+                        <div class="info-value" id="profile-phone-display">-</div>
+                        <input type="tel" id="profile-phone-input" class="edit-input" style="display: none;"
+                            placeholder="رقم الهاتف">
+                        <button class="edit-field-btn" onclick="editField('phone')"><i class="fas fa-pen"></i></button>
+                    </div>
+
+                    <div class="info-row editable">
+                        <div class="info-label">
+                            <i class="fas fa-envelope"></i>
+                            <span>البريد الإلكتروني</span>
+                        </div>
+                        <div class="info-value" id="profile-email-display">-</div>
+                        <input type="email" id="profile-email-input" class="edit-input" style="display: none;"
+                            placeholder="البريد الإلكتروني">
+                        <button class="edit-field-btn" onclick="editField('email')"><i class="fas fa-pen"></i></button>
+                    </div>
+
+                    <div class="info-row">
+                        <div class="info-label">
+                            <i class="fas fa-clock"></i>
+                            <span>آخر ظهور</span>
+                        </div>
+                        <div class="info-value" id="profile-lastseen">-</div>
+                    </div>
+
+                    <div class="info-row">
+                        <div class="info-label">
+                            <i class="fas fa-calendar"></i>
+                            <span>تاريخ الانضمام</span>
+                        </div>
+                        <div class="info-value" id="profile-joined">-</div>
+                    </div>
+                </div>
+
+                <!-- الإحصائيات -->
+                <div class="profile-stats">
+                    <div class="stat-card">
+                        <i class="fas fa-comment-dots"></i>
+                        <span id="stat-messages">0</span>
+                        <span>رسالة</span>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-users"></i>
+                        <span id="stat-chats">0</span>
+                        <span>محادثة</span>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-images"></i>
+                        <span id="stat-media">0</span>
+                        <span>وسائط</span>
+                    </div>
+                </div>
+
+                <!-- الإعدادات -->
+                <div class="settings-section">
+                    <h3><i class="fas fa-cog"></i> الإعدادات</h3>
+
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <i class="fas fa-bell"></i>
+                            <span>الإشعارات</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="notifications-toggle"
+                                onchange="updateSetting('notifications_enabled', this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <i class="fas fa-volume-up"></i>
+                            <span>الأصوات</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="sound-toggle"
+                                onchange="updateSetting('sound_enabled', this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <i class="fas fa-eye"></i>
+                            <span>معاينة الرسائل</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="preview-toggle"
+                                onchange="updateSetting('message_preview_enabled', this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <i class="fas fa-moon"></i>
+                            <span>المظهر</span>
+                        </div>
+                        <select id="theme-select" onchange="updateSetting('theme_preference', this.value)">
+                            <option value="dark">داكن</option>
+                            <option value="light">فاتح</option>
+                            <option value="auto">تلقائي</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <i class="fas fa-language"></i>
+                            <span>اللغة</span>
+                        </div>
+                        <select id="language-select" onchange="updateSetting('language', this.value)">
+                            <option value="ar">العربية</option>
+                            <option value="en">English</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button class="logout-btn" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> تسجيل الخروج
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- عناصر إضافية -->
+    <input type="file" id="media-input" accept="image/*,video/*" multiple style="display: none">
+    <input type="file" id="avatar-input" accept="image/*" style="display: none">
+
+    <div id="image-preview" class="image-preview" style="display: none;">
+        <div class="preview-header">
+            <span><i class="fas fa-image"></i> معاينة الصورة</span>
+            <button class="close-preview" onclick="cancelImagePreview()"><i class="fas fa-times"></i></button>
+        </div>
+        <img id="preview-img" src="" alt="معاينة">
+        <div class="preview-actions">
+            <button class="send-image-btn" onclick="sendImage()">
+                <i class="fas fa-paper-plane"></i> إرسال
+            </button>
+            <button class="cancel-preview-btn" onclick="cancelImagePreview()">
+                <i class="fas fa-times"></i> إلغاء
+            </button>
+        </div>
+    </div>
+    
+    <div id="video-preview" class="video-preview" style="display: none;">
+        <div class="preview-header">
+            <span><i class="fas fa-video"></i> معاينة الفيديو</span>
+            <button class="close-preview" onclick="cancelVideoPreview()"><i class="fas fa-times"></i></button>
+        </div>
+        <video id="preview-video" controls style="max-width: 100%; max-height: 200px; border-radius: 8px;"></video>
+        <div class="preview-actions">
+            <button class="send-video-btn" onclick="sendVideo()">
+                <i class="fas fa-paper-plane"></i> إرسال
+            </button>
+            <button class="cancel-preview-btn" onclick="cancelVideoPreview()">
+                <i class="fas fa-times"></i> إلغاء
+            </button>
+        </div>
+    </div>
+
+    <div id="image-modal" class="image-modal">
+        <div class="modal-close" onclick="closeImageModal()">
+            <i class="fas fa-times"></i>
+        </div>
+        <div class="modal-container">
+            <img id="modal-image" src="" alt="صورة">
+        </div>
+        <div class="modal-controls">
+            <button onclick="zoomImage()" id="zoom-btn" title="تكبير">
+                <i class="fas fa-search-plus"></i>
+            </button>
+            <button onclick="downloadImage()" id="download-btn" title="تحميل">
+                <i class="fas fa-download"></i>
+            </button>
+            <button onclick="closeImageModal()" title="إغلاق">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-caption" id="modal-caption"></div>
+    </div>
+
+    <!-- طبقة الخلفية للقائمة الجانبية -->
+    <div id="sidebar-overlay" class="sidebar-overlay" onclick="closeSidebar()"></div>
+
+    <!-- JavaScript Files -->
+    <script src="/js/main.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/chat.js"></script>
+    <script src="/js/websocket.js"></script>
+    <script src="/js/messages.js"></script>
+    <script src="/js/media.js"></script>
+    <script src="/js/audio.js"></script>
+    <script src="/js/profile.js"></script>
+    <script src="/js/ui.js"></script>
+    <script src="/js/utils.js"></script>
+</body>
+
+</html>
