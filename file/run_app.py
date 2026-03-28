@@ -136,13 +136,21 @@ def main():
     print_color("Starting Chat Application", Colors.BOLD)
     print_color("="*60, Colors.BLUE)
     
+    #backend_path = Path(r"/home/mln/Projects/web/test/chat-app-v2/final-chat-project/file/chat_project/backend")
+    #cloudflared_path ="cloudflared"
     backend_path = Path(r"C:\Users\pc\Desktop\file\chat_project\backend")
-    cloudflared_path = Path(r"C:\Users\pc\Desktop\cloudflared")
+    cloudflared_path = Path(r"C:\Users\pc\Desktop\file\cloudflared")
+    
     
     if not backend_path.exists():
         print_color(f"Path not found: {backend_path}", Colors.RED)
         return
     
+    if cloudflared_path is None:
+        print_color("cloudflared not found in PATH", Colors.RED)
+        return
+    
+    # you don't need this in linux, but in windows we need to check if the executable exists
     if not cloudflared_path.exists():
         print_color(f"Path not found: {cloudflared_path}", Colors.RED)
         return
@@ -155,18 +163,29 @@ def main():
     
     print_color("\n[1/3] Starting FastAPI server...", Colors.YELLOW)
     os.chdir(backend_path)
-    
+
+
+    #this won't work in linux, but in windows we need to open a new terminal to run the server
     fastapi_process = subprocess.Popen(
         ["cmd", "/k", "uvicorn main:app --host 0.0.0.0 --port 8000 --reload"],
         shell=True,
         creationflags=subprocess.CREATE_NEW_CONSOLE
     )
-    
+
+
+    #we can just run the server in the same terminal in linux
+    #fastapi_process = subprocess.Popen(
+    #    ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    #)
+
     time.sleep(3)
     print_color("FastAPI server running on port 8000", Colors.GREEN)
     
     print_color("\n[2/3] Starting Cloudflare Tunnel...", Colors.YELLOW)
-    os.chdir(cloudflared_path)
+    #use 
+    #os.chdir(cloudflared_path)
+    #when you have the cloudflared executable in a specific folder, 
+    # but if you have it as a cli tool then you don't need to call os.chdir 
     
     public_url, tunnel_process = get_cloudflare_url(cloudflared_path)
     

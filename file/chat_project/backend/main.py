@@ -2,14 +2,15 @@ from fastapi import FastAPI, WebSocket, Form, File, UploadFile, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from database import get_connection
 from starlette.websockets import WebSocketDisconnect
-import os
-import json
-import uuid
-import shutil
+from database import get_connection
 from datetime import datetime
 from pathlib import Path
+import bcrypt
+import shutil
+import json
+import uuid
+import os
 
 app = FastAPI()
 
@@ -55,6 +56,9 @@ def root():
 # ======================== المصادقة ========================
 @app.post("/register")
 async def register(username: str = Form(...), password: str = Form(...)):
+    # تشفير كلمة المرور باستخدام bcrypt
+    hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+    
     conn = get_connection()
     cur = conn.cursor()
     try:
@@ -67,7 +71,7 @@ async def register(username: str = Form(...), password: str = Form(...)):
         if cur.fetchone():
             return {"status": "fail", "detail": "اسم المستخدم موجود بالفعل"}
         
-        cur.execute("INSERT INTO users (username, password) VALUES (%s,%s) RETURNING id", (username, password))
+        cur.execute("INSERT INTO users (username, password) VALUES (%s,%s) RETURNING id", (username, hashed_password.decode('utf-8')))
         new_user_id = cur.fetchone()[0]
         conn.commit()
         
@@ -120,9 +124,17 @@ def login(username: str = Form(...), password: str = Form(...)):
     conn = get_connection()
     cur = conn.cursor()
     try:
-        cur.execute("SELECT id, username FROM users WHERE username=%s AND password=%s", (username, password))
-        user = cur.fetchone()
-        if user:
+        cur.execute("SELECT id, username, password FROM users WHERE username=%s", (username,))
+        user = cur.fetchone() # fetchone() will return a single record as a tuple, 
+                              #where user[0] is the user_id, user[1] is the username, 
+                              # and user[2] is the hashed password.
+
+
+        # verfiy the provided password against the stored hashed password using bcrypt's verify function.
+        #the .checkpw method will handle the hashing and salting internally, 
+        # ensuring that the password is securely checked without exposing the original password or the hash details.
+
+        if user and bcrypt.checkpw(password.encode('utf-8'), user[2].encode('utf-8')):
             # تحديث آخر تسجيل دخول
             cur.execute("UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = %s", (user[0],))
             conn.commit()
