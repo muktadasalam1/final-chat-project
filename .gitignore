@@ -1,3 +1,8 @@
 file/__pycache__/run_app.cpython-314.pyc
 file/chat_project/backend/__pycache__/database.cpython-314.pyc
 file/chat_project/backend/__pycache__/main.cpython-314.pyc
+file/chat_project/backend/local_qr.png
+file/chat_project/backend/public_qr.png
+*.pyc
+
+
