@@ -107,7 +107,7 @@
                 <div class="sidebar" id="sidebar">
                     <div class="resize-handle" id="resize-handle"></div>
                     <div class="profile-section">
-                        <div class="user-info" onclick="openProfile()" style="cursor: pointer;">
+                        <div class="user-info" onclick=openProfile() style="cursor: pointer;">
                             <div class="user-avatar-small">
                                 <div id="sidebar-avatar-initial" class="avatar-initial">U</div>
                             </div>
@@ -200,7 +200,7 @@
                         <div class="info-value" id="profile-username-display">-</div>
                         <input type="text" id="profile-username-input" class="edit-input" style="display: none;"
                             placeholder="اسم المستخدم">
-                        <button class="edit-field-btn" onclick="editField('username')"><i
+                        <button class="edit-field-btn" onclick="editField('username',event)"><i
                                 class="fas fa-pen"></i></button>
                     </div>
 
@@ -212,7 +212,7 @@
                         <div class="info-value" id="profile-fullname-display">-</div>
                         <input type="text" id="profile-fullname-input" class="edit-input" style="display: none;"
                             placeholder="الاسم الكامل">
-                        <button class="edit-field-btn" onclick="editField('fullname')"><i
+                        <button class="edit-field-btn" onclick="editField('fullname',event)"><i
                                 class="fas fa-pen"></i></button>
                     </div>
 
@@ -224,7 +224,7 @@
                         <div class="info-value bio-text" id="profile-bio-display">-</div>
                         <textarea id="profile-bio-input" class="edit-input" style="display: none;" rows="3"
                             placeholder="اكتب سيرتك الذاتية..."></textarea>
-                        <button class="edit-field-btn" onclick="editField('bio')"><i class="fas fa-pen"></i></button>
+                        <button class="edit-field-btn" onclick="editField('bio',event)"><i class="fas fa-pen"></i></button>
                     </div>
 
                     <div class="info-row editable">
@@ -235,7 +235,7 @@
                         <div class="info-value" id="profile-phone-display">-</div>
                         <input type="tel" id="profile-phone-input" class="edit-input" style="display: none;"
                             placeholder="رقم الهاتف">
-                        <button class="edit-field-btn" onclick="editField('phone')"><i class="fas fa-pen"></i></button>
+                        <button class="edit-field-btn" onclick="editField('phone',event)"><i class="fas fa-pen"></i></button>
                     </div>
 
                     <div class="info-row editable">
@@ -246,7 +246,7 @@
                         <div class="info-value" id="profile-email-display">-</div>
                         <input type="email" id="profile-email-input" class="edit-input" style="display: none;"
                             placeholder="البريد الإلكتروني">
-                        <button class="edit-field-btn" onclick="editField('email')"><i class="fas fa-pen"></i></button>
+                        <button class="edit-field-btn" onclick="editField('email',event)"><i class="fas fa-pen"></i></button>
                     </div>
 
                     <div class="info-row">

@@ -6,7 +6,7 @@ import sys
 import re
 import webbrowser
 from pathlib import Path
-
+import pyperclip
 class Colors:
     HEADER = '\033[95m'
     BLUE = '\033[94m'
@@ -105,13 +105,20 @@ def create_qr_code(url, filename="qr_code.png"):
         return False
 
 def get_cloudflare_url(cloudflared_path):
+    # try:
+    #     process = subprocess.Popen(
+    #         [str(cloudflared_path / "cloudflared.exe"), "tunnel", "--url", "http://localhost:8000"],
+    #         stdout=subprocess.PIPE,
+    #         stderr=subprocess.PIPE,
+    #         text=True,
+    #         creationflags=subprocess.CREATE_NO_WINDOW
+    #     )
     try:
         process = subprocess.Popen(
-            [str(cloudflared_path / "cloudflared.exe"), "tunnel", "--url", "http://localhost:8000"],
+            ["cloudflared", "tunnel", "--url", "http://localhost:8000"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True,
-            creationflags=subprocess.CREATE_NO_WINDOW
+            text=True
         )
         
         public_url = None
@@ -136,10 +143,10 @@ def main():
     print_color("Starting Chat Application", Colors.BOLD)
     print_color("="*60, Colors.BLUE)
     
-    #backend_path = Path(r"/home/mln/Projects/web/test/chat-app-v2/final-chat-project/file/chat_project/backend")
-    #cloudflared_path ="cloudflared"
-    backend_path = Path(r"C:\Users\pc\Desktop\file\chat_project\backend")
-    cloudflared_path = Path(r"C:\Users\pc\Desktop\file\cloudflared")
+    backend_path = Path(r"/home/mln/Projects/web/test/chat-app-v2/final-chat-project/file/chat_project/backend")
+    cloudflared_path ="cloudflared"
+    #backend_path = Path(r"C:\Users\pc\Desktop\file\chat_project\backend")
+    #cloudflared_path = Path(r"C:\Users\pc\Desktop\file\cloudflared")
     
     
     if not backend_path.exists():
@@ -151,9 +158,9 @@ def main():
         return
     
     # you don't need this in linux, but in windows we need to check if the executable exists
-    if not cloudflared_path.exists():
-        print_color(f"Path not found: {cloudflared_path}", Colors.RED)
-        return
+    # if not cloudflared_path.exists():
+    #     print_color(f"Path not found: {cloudflared_path}", Colors.RED)
+    #     return
     
     local_ip = get_local_ip()
     local_url = f"http://{local_ip}:8000"
@@ -166,18 +173,21 @@ def main():
 
 
     #this won't work in linux, but in windows we need to open a new terminal to run the server
-    fastapi_process = subprocess.Popen(
-        ["cmd", "/k", "uvicorn main:app --host 0.0.0.0 --port 8000 --reload"],
-        shell=True,
-        creationflags=subprocess.CREATE_NEW_CONSOLE
-    )
+    # fastapi_process = subprocess.Popen(
+    #     ["cmd", "/k", "uvicorn main:app --host 0.0.0.0 --port 8000 --reload"],
+    #     shell=True,
+    #     creationflags=subprocess.CREATE_NEW_CONSOLE
+    # )
 
 
     #we can just run the server in the same terminal in linux
-    #fastapi_process = subprocess.Popen(
+    # fastapi_process = subprocess.Popen(
     #    ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
-    #)
-
+    # )
+    fastapi_process = subprocess.Popen(
+        [sys.executable, "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    )
+    
     time.sleep(3)
     print_color("FastAPI server running on port 8000", Colors.GREEN)
     
@@ -201,7 +211,7 @@ def main():
         print_color(f"   {public_url}", Colors.GREEN)
         
         try:
-            import pyperclip
+            
             pyperclip.copy(public_url)
             print_color(f"Public URL copied to clipboard", Colors.GREEN)
         except:
