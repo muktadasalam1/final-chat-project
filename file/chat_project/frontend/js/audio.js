@@ -1,10 +1,13 @@
 // ========== Audio Recording ==========
 async function requestMicrophonePermission() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        console.log('Microphone not supported in this context (HTTP)');
+        return false;
+    }
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         stream.getTracks().forEach(track => track.stop());
         console.log('Microphone permission granted');
-        showToast('Microphone access granted');
         return true;
     } catch (err) {
         console.error('Microphone permission denied:', err);

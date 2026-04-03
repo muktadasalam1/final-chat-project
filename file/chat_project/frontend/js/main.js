@@ -69,26 +69,6 @@ if (savedWidth && sidebar) {
     sidebar.style.width = savedWidth;
 }
 
-// ========== Page Initialization ==========
-window.onload = () => {
-    showScreen('welcome-screen');
-    initVoiceButton();
-    ensureSidebarOverlay();
-    initMobileInterface();
-
-    const menuToggle = document.getElementById('menu-toggle');
-    if (menuToggle) menuToggle.style.display = 'none';
-
-    const searchInput = document.getElementById('search-user');
-    if (searchInput) {
-        searchInput.addEventListener('input', () => loadUsers());
-    }
-    window.addEventListener('resize', initMobileInterface);
-
-    setTimeout(() => {
-        requestMicrophonePermission();
-    }, 1000);
-};
 
 document.addEventListener('click', function (e) {
     if (e.target.classList && e.target.classList.contains('message-image')) {

@@ -44,7 +44,7 @@ async function login() {
         if (data.status === 'success') {
             userId = data.user_id;
             currentUsername = data.username;
-            saveSession(data.token, data.user);
+            saveSession(userId, { user_id: userId, username: currentUsername });
             requestNotificationPermission();
             document.getElementById('current-username').innerHTML = currentUsername;
             showScreen('chat-screen');

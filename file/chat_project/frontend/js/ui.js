@@ -28,7 +28,9 @@ function scrollToBottom() {
 }
 
 function requestNotificationPermission() {
-    if ('Notification' in window) Notification.requestPermission();
+    if ('Notification' in window && window.location.protocol === 'https:') {
+        Notification.requestPermission();
+    }
 }
 
 // ========== Mobile Functions ==========
@@ -108,3 +110,24 @@ function closeChatAndShowSidebar() {
         toggleSidebar();
     }
 }
+
+// ========== Page Initialization (loaded last) ==========
+window.onload = () => {
+    showScreen('welcome-screen');
+    initVoiceButton();
+    ensureSidebarOverlay();
+    initMobileInterface();
+
+    const menuToggle = document.getElementById('menu-toggle');
+    if (menuToggle) menuToggle.style.display = 'none';
+
+    const searchInput = document.getElementById('search-user');
+    if (searchInput) {
+        searchInput.addEventListener('input', () => loadUsers());
+    }
+    window.addEventListener('resize', initMobileInterface);
+
+    setTimeout(() => {
+        requestMicrophonePermission();
+    }, 1000);
+};

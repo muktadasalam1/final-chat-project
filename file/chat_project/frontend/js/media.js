@@ -1,54 +1,59 @@
 // ========== Media Functions ==========
-document.getElementById('media-input').addEventListener('change', async (e) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+document.addEventListener('DOMContentLoaded', () => {
+    const mediaInput = document.getElementById('media-input');
+    if (mediaInput) {
+        mediaInput.addEventListener('change', async (e) => {
+            const files = e.target.files;
+            if (!files || files.length === 0) return;
 
-    if (files.length === 1) {
-        const file = files[0];
-        if (file.type.startsWith('image/')) {
-            selectedImageFile = file;
-            selectedVideoFile = null;
-            let reader = new FileReader();
-            reader.onload = (ev) => {
-                selectedImageData = ev.target.result;
-                document.getElementById('preview-img').src = selectedImageData;
-                document.getElementById('image-preview').style.display = 'block';
-                document.getElementById('video-preview').style.display = 'none';
-            };
-            reader.readAsDataURL(file);
-        } else if (file.type.startsWith('video/')) {
-            selectedVideoFile = file;
-            selectedImageFile = null;
-            let reader = new FileReader();
-            reader.onload = (ev) => {
-                selectedVideoData = ev.target.result;
-                const videoPreview = document.getElementById('video-preview');
-                const videoElement = document.getElementById('preview-video');
-                videoElement.src = selectedVideoData;
-                videoPreview.style.display = 'block';
-                document.getElementById('image-preview').style.display = 'none';
-            };
-            reader.readAsDataURL(file);
-        }
-    } else {
-        showToast(`Uploading ${files.length} files...`);
+            if (files.length === 1) {
+                const file = files[0];
+                if (file.type.startsWith('image/')) {
+                    selectedImageFile = file;
+                    selectedVideoFile = null;
+                    let reader = new FileReader();
+                    reader.onload = (ev) => {
+                        selectedImageData = ev.target.result;
+                        document.getElementById('preview-img').src = selectedImageData;
+                        document.getElementById('image-preview').style.display = 'block';
+                        document.getElementById('video-preview').style.display = 'none';
+                    };
+                    reader.readAsDataURL(file);
+                } else if (file.type.startsWith('video/')) {
+                    selectedVideoFile = file;
+                    selectedImageFile = null;
+                    let reader = new FileReader();
+                    reader.onload = (ev) => {
+                        selectedVideoData = ev.target.result;
+                        const videoPreview = document.getElementById('video-preview');
+                        const videoElement = document.getElementById('preview-video');
+                        videoElement.src = selectedVideoData;
+                        videoPreview.style.display = 'block';
+                        document.getElementById('image-preview').style.display = 'none';
+                    };
+                    reader.readAsDataURL(file);
+                }
+            } else {
+                showToast(`Uploading ${files.length} files...`);
 
-        for (let i = 0; i < files.length; i++) {
-            const file = files[i];
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
 
-            if (file.type.startsWith('image/')) {
-                await uploadAndSendImage(file);
-            } else if (file.type.startsWith('video/')) {
-                await uploadAndSendVideo(file);
+                    if (file.type.startsWith('image/')) {
+                        await uploadAndSendImage(file);
+                    } else if (file.type.startsWith('video/')) {
+                        await uploadAndSendVideo(file);
+                    }
+
+                    if (i < files.length - 1) {
+                        await new Promise(r => setTimeout(r, 500));
+                    }
+                }
+
+                e.target.value = '';
+                showToast('All files sent');
             }
-
-            if (i < files.length - 1) {
-                await new Promise(r => setTimeout(r, 500));
-            }
-        }
-
-        e.target.value = '';
-        showToast('All files sent');
+        });
     }
 });
 

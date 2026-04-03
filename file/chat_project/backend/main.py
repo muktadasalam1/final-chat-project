@@ -1,8 +1,9 @@
 from fastapi import FastAPI, WebSocket, Form, File, UploadFile, Request
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
+from starlette.staticfiles import StaticFiles
 from starlette.websockets import WebSocketDisconnect
+from starlette.datastructures import URLPath
 from database import get_connection
 from datetime import datetime
 from pathlib import Path
@@ -38,10 +39,18 @@ AUDIO_DIR.mkdir(parents=True, exist_ok=True)
 VIDEOS_DIR.mkdir(parents=True, exist_ok=True)
 AVATAR_DIR.mkdir(parents=True, exist_ok=True)
 
+class NoCacheStaticFiles(StaticFiles):
+    async def get_response(self, path: str, scope: dict) -> Response:
+        response = await super().get_response(path, scope)
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+        return response
+
 # ربط مجلد الملفات المرفوعة والمجلدات الثابتة
-app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
-app.mount("/css", StaticFiles(directory=str(FRONTEND_DIR / "css")), name="css")
-app.mount("/js", StaticFiles(directory=str(FRONTEND_DIR / "js")), name="js")
+app.mount("/uploads", NoCacheStaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
+app.mount("/css", NoCacheStaticFiles(directory=str(FRONTEND_DIR / "css")), name="css")
+app.mount("/js", NoCacheStaticFiles(directory=str(FRONTEND_DIR / "js")), name="js")
 
 # متغيرات لتخزين الاتصالات النشطة
 active_notifications = {}
@@ -389,7 +398,13 @@ async def get_profile(user_id: int):
         cur.execute("SELECT COUNT(*) FROM messages WHERE sender_id = %s", (user_id,))
         message_count = cur.fetchone()[0] #total number of messages sent by this user.
         
-        cur.execute("SELECT COUNT(DISTINCT chat_id) FROM messages WHERE sender_id = %s OR chat_id = %s", (user_id, user_id))
+        cur.execute("""
+            SELECT COUNT(DISTINCT user_id) FROM (
+                SELECT chat_id AS user_id FROM messages WHERE sender_id = %s
+                UNION
+                SELECT sender_id AS user_id FROM messages WHERE chat_id = %s
+            ) AS conversations
+        """, (user_id, user_id))
         chat_count = cur.fetchone()[0] #number of unique conversations this user has participated in.
         #DISTINCT ensures each chat is counted once even if multiple messages were exchanged.
         

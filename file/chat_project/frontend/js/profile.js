@@ -1,16 +1,12 @@
 // ========== State ==========
-//let currentEditingField = null;
+let currentEditingField = null;
 
 
 // ========== Profile Functions ==========
-window.openProfile = async function () {
+window.openProfile = function () {
     console.log("Profile clicked");
-
     showScreen("profile-screen");
-
     loadProfile();
-    const data = await response.json();
-    console.log(data); // check the full response structure
 };
 async function loadProfile() {
     try {
@@ -29,12 +25,14 @@ async function loadProfile() {
             document.getElementById("profile-fullname-display").textContent = data.full_name || "-";
             document.getElementById("profile-bio-display").textContent = data.bio || "No bio";
             document.getElementById("profile-phone-display").textContent = data.phone || "-";
-            document.getElementById("profile-email-display").textContent = data.email || "null";
+            document.getElementById("profile-email-display").textContent = data.email || "-";
             document.getElementById("profile-lastseen").textContent = data.last_seen || "-";
-            document.getElementById("profile-joined").textContent = data.joined_at || "-";
-            document.getElementById("stat-messages").textContent = data.data.stats.messages ?? "0";
-            document.getElementById("stat-chats").textContent    = data.data.stats.chats   ?? "0";
-            document.getElementById("stat-media").textContent    = data.data.stats.media   ?? "0";
+            document.getElementById("profile-joined").textContent = data.joined_date || "-";
+            if (data.stats) {
+                document.getElementById("stat-messages").textContent = data.stats.messages || 0;
+                document.getElementById("stat-chats").textContent    = data.stats.chats    || 0;
+                document.getElementById("stat-media").textContent    = data.stats.media    || 0;
+            }
 
         } else {
             showToast("Failed to load profile", true);
