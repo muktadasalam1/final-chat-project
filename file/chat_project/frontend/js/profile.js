@@ -1,5 +1,3 @@
-// ========== State ==========
-let currentEditingField = null;
 
 
 // ========== Profile Functions ==========
@@ -24,15 +22,24 @@ async function loadProfile() {
             document.getElementById("profile-username-display").textContent = data.username || "-";
             document.getElementById("profile-fullname-display").textContent = data.full_name || "-";
             document.getElementById("profile-bio-display").textContent = data.bio || "No bio";
-            document.getElementById("profile-phone-display").textContent = data.phone || "-";
+            //document.getElementById("profile-phone-display").textContent = data.phone_number || "-";            
+            document.getElementById("profile-phone-display").textContent = data.phone_number || "-";
             document.getElementById("profile-email-display").textContent = data.email || "-";
-            document.getElementById("profile-lastseen").textContent = data.last_seen || "-";
-            document.getElementById("profile-joined").textContent = data.joined_date || "-";
+            document.getElementById("profile-lastseen").textContent = formatDate(data.last_seen || "-");
+            document.getElementById("profile-joined").textContent = formatDate(data.joined_date || "-");
             if (data.stats) {
                 document.getElementById("stat-messages").textContent = data.stats.messages || 0;
                 document.getElementById("stat-chats").textContent    = data.stats.chats    || 0;
                 document.getElementById("stat-media").textContent    = data.stats.media    || 0;
             }
+            if (data.settings) {
+                document.getElementById("notifications-toggle").checked = data.settings.notifications_enabled ?? true;
+                document.getElementById("sound-toggle").checked         = data.settings.sound_enabled ?? true;
+                document.getElementById("preview-toggle").checked       = data.settings.message_preview_enabled ?? true;
+                document.getElementById("theme-select").value           = data.settings.theme_preference || "dark";
+                document.getElementById("language-select").value        = data.settings.language || "ar";
+            }
+        applyTheme(data.settings.theme_preference || "dark");
 
         } else {
             showToast("Failed to load profile", true);
@@ -54,9 +61,14 @@ function editField(field, event) {
         const newValue = inputEl.value.trim();
 
         if (newValue && newValue !== displayEl.textContent) {
+            if (field ==  "phone") {
+                field = "phone_number"
+            }
+
+            console.log(field)
             updateProfileField(field, newValue);
         }
-
+        
         displayEl.style.display = 'block';
         inputEl.style.display = 'none';
 
@@ -192,4 +204,15 @@ function applyTheme(theme) {
             document.body.classList.add('light-mode');
         }
     }
+}
+function formatDate(isoString) {
+    if (!isoString) return "-";
+    const date = new Date(isoString);
+    return date.toLocaleDateString('ar-IQ', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
 }

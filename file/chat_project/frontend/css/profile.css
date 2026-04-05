@@ -1,6 +1,11 @@
+#profile-screen {
+    height: 100vh;
+    overflow: hidden;      /* let .profile-wrapper handle the scroll */
+}
+
 .profile-wrapper {
     background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
-    min-height: 100%;
+    height: 100%; 
     overflow-y: auto;
     padding: 20px;
 }
@@ -27,9 +32,8 @@
     background: rgba(43, 82, 120, 0.3);
     border: none;
     color: white;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
+    padding: 8px 16px;        /* replace width/height with padding */
+    border-radius: 80px;      /* pill shape instead of circle */
     cursor: pointer;
     display: flex;
     align-items: center;

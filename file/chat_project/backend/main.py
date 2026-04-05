@@ -460,10 +460,19 @@ async def update_profile(user_id: int, request: Request):
     try:
         fields = []
         values = []
+        if 'username' in data and data['username']:
+            cur.execute(
+                "UPDATE users SET username = %s WHERE id = %s",
+                (data['username'], user_id)
+            )
+            conn.commit
+            return {"status": "success", "message": "Profile updated successfully"}
         
+
+
         #only allow updating specific fields to prevent the user from overwriting
         #sensitive columns like user_id or created_at by injecting unexpected keys.
-        allowed_fields = ['full_name', 'bio', 'phone_number', 'email', 'status_emoji',"username"]
+        allowed_fields = ['full_name', 'bio', 'phone_number', 'email', 'status_emoji',]
         
         for field in allowed_fields:
             if field in data and data[field] is not None:
@@ -473,7 +482,7 @@ async def update_profile(user_id: int, request: Request):
                 values.append(data[field])
         
         if fields:
-            values.append(user_id)
+            #values.append(user_id)
             #use INSERT ... ON CONFLICT DO UPDATE (also known as "upsert") so that
             #if a profile row already exists for this user it gets updated,
             #and if it doesn't exist yet it gets created — all in a single query.
@@ -483,7 +492,7 @@ async def update_profile(user_id: int, request: Request):
                 ON CONFLICT (user_id) 
                 DO UPDATE SET {', '.join(fields)}
             """
-            final_values = [data[f.split('=')[0].strip()] for f in fields] + [user_id]
+            final_values = [user_id] + values + values
             cur.execute(query, final_values)
             conn.commit()
         
@@ -500,6 +509,7 @@ async def update_profile(user_id: int, request: Request):
 async def update_settings(user_id: int, request: Request):
     """تحديث إعدادات المستخدم"""
     data = await request.json()
+    print(f"Received data: {data}") 
     conn = get_connection()
     cur = conn.cursor()
     
@@ -517,7 +527,7 @@ async def update_settings(user_id: int, request: Request):
                         value = True
                     elif value.lower() == 'false':
                         value = False
-                
+            
                 #same upsert pattern as update_profile — insert a new settings row if one doesn't exist,
                 #or update just the changed setting if it does.
                 #updated_at is refreshed on every update so we can track when settings were last changed.
@@ -528,7 +538,7 @@ async def update_settings(user_id: int, request: Request):
                     DO UPDATE SET {setting} = %s, updated_at = CURRENT_TIMESTAMP
                 """
                 cur.execute(query, (user_id, value, value))
-        
+        print(f"settings to update {setting}" ) 
         conn.commit()
         return {"status": "success", "message": "Settings updated successfully"}
         

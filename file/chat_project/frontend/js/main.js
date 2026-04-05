@@ -38,37 +38,39 @@ window.isClosingWebSocket = false;
 let isResizing = false;
 let startX = 0;
 let startWidth = 0;
-const sidebar = document.getElementById('sidebar');
-const resizeHandle = document.getElementById('resize-handle');
 
-if (resizeHandle) {
-    resizeHandle.addEventListener('mousedown', (e) => {
-        isResizing = true;
-        startX = e.clientX;
-        startWidth = sidebar.offsetWidth;
-        document.body.style.cursor = 'col-resize';
-        e.preventDefault();
+document.addEventListener('DOMContentLoaded', () => {
+    const sidebar = document.getElementById('sidebar');
+    const resizeHandle = document.getElementById('resize-handle');
+
+    if (resizeHandle) {
+        resizeHandle.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            startX = e.clientX;
+            startWidth = sidebar.offsetWidth;
+            document.body.style.cursor = 'col-resize';
+            e.preventDefault();
+        });
+    }
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isResizing) return;
+        let newWidth = startWidth + (startX - e.clientX);
+        newWidth = Math.min(500, Math.max(200, newWidth));
+        sidebar.style.width = newWidth + 'px';
     });
-}
 
-document.addEventListener('mousemove', (e) => {
-    if (!isResizing) return;
-    let newWidth = startWidth + (startX - e.clientX);
-    newWidth = Math.min(500, Math.max(200, newWidth));
-    sidebar.style.width = newWidth + 'px';
+    document.addEventListener('mouseup', () => {
+        isResizing = false;
+        document.body.style.cursor = '';
+        localStorage.setItem('sidebarWidth', sidebar.style.width);
+    });
+
+    const savedWidth = localStorage.getItem('sidebarWidth');
+    if (savedWidth && sidebar) {
+        sidebar.style.width = savedWidth;
+    }
 });
-
-document.addEventListener('mouseup', () => {
-    isResizing = false;
-    document.body.style.cursor = '';
-    localStorage.setItem('sidebarWidth', sidebar.style.width);
-});
-
-const savedWidth = localStorage.getItem('sidebarWidth');
-if (savedWidth && sidebar) {
-    sidebar.style.width = savedWidth;
-}
-
 
 document.addEventListener('click', function (e) {
     if (e.target.classList && e.target.classList.contains('message-image')) {
@@ -78,7 +80,8 @@ document.addEventListener('click', function (e) {
 });
 
 document.addEventListener('keydown', function (e) {
-    if (document.getElementById('image-modal').classList.contains('active')) {
+    const imageModal = document.getElementById('image-modal');
+    if (imageModal && imageModal.classList.contains('active')) {
         if (e.key === 'Escape') {
             closeImageModal();
         } else if (e.key === '+' || e.key === '=') {
