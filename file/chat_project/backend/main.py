@@ -1,19 +1,30 @@
-from fastapi import FastAPI, WebSocket, Form, File, UploadFile, Request
+from platform import node
+from fastapi import Depends, FastAPI, HTTPException, Header, WebSocket, Form, File, UploadFile, Request
+from typing import Optional
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.staticfiles import StaticFiles
 from starlette.websockets import WebSocketDisconnect
 from starlette.datastructures import URLPath
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from database import get_connection
+from jose import jwt, JWTError
 from datetime import datetime
+from dotenv import load_dotenv
 from pathlib import Path
 import bcrypt
 import shutil
 import json
 import uuid
 import os
-
+load_dotenv()
 app = FastAPI()
+
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # إعدادات CORS
 app.add_middleware(
@@ -56,6 +67,23 @@ app.mount("/js", NoCacheStaticFiles(directory=str(FRONTEND_DIR / "js")), name="j
 active_notifications = {}
 active_users_updates = []
 
+# ======================== دوال مساعدة ========================
+#هذه الدالة تستخدم في نقاط النهاية التي تتطلب مصادقة المستخدم.
+def Get_Current_User(request: Request):
+    authorization = request.headers.get("authorization")
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Authorization header missing")
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid authorization format")
+    token = authorization.split(" ")[1]
+    try:
+        SECOND_KEY = os.getenv("SECOND_KEY") or "fallback_key"
+        payload = jwt.decode(token, SECOND_KEY, algorithms=["HS256"])
+        return payload.get("user_id")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+
 # ======================== تقديم الملفات الثابتة ========================
 @app.get("/")
 def root():
@@ -64,7 +92,8 @@ def root():
 
 # ======================== المصادقة ========================
 @app.post("/register")
-async def register(username: str = Form(...), password: str = Form(...)):
+@limiter.limit("20/10second; 200/minute")
+async def register(request: Request, username: str = Form(...), password: str = Form(...)):
     # تشفير كلمة المرور باستخدام bcrypt
     hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
     
@@ -131,7 +160,8 @@ async def register(username: str = Form(...), password: str = Form(...)):
         conn.close()
 
 @app.post("/login")
-def login(username: str = Form(...), password: str = Form(...)):
+@limiter.limit("20/10second; 200/minute")
+def login(request: Request, username: str = Form(...), password: str = Form(...)):
     conn = get_connection()
     cur = conn.cursor()
     try:
@@ -146,10 +176,12 @@ def login(username: str = Form(...), password: str = Form(...)):
         # ensuring that the password is securely checked without exposing the original password or the hash details.
 
         if user and bcrypt.checkpw(password.encode('utf-8'), user[2].encode('utf-8')):
-            # تحديث آخر تسجيل دخول
             cur.execute("UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = %s", (user[0],))
             conn.commit()
-            return {"status": "success", "user_id": user[0], "username": user[1]}
+            token_payload = {"user_id": user[0], "username": user[1]}
+            SECOND_KEY = os.getenv("SECOND_KEY") or "fallback_key"
+            access_token = jwt.encode(token_payload, SECOND_KEY, algorithm="HS256")
+            return {"status": "success", "user_id": user[0], "username": user[1], "token": access_token}
         return {"status": "fail", "detail": "اسم المستخدم أو كلمة المرور غير صحيحة"}
     except Exception as e:
         print(f"Error in login: {e}")
@@ -255,7 +287,8 @@ async def upload_video(file: UploadFile = File(...)):
 
 # ======================== المستخدمين ========================
 @app.get("/users/{user_id}")
-async def get_users(user_id: int, search: str = ""):
+@limiter.limit("20/10second; 200/minute")
+async def get_users(request: Request, user_id: int, search: str = ""):
     """جلب المستخدمين مع إمكانية البحث"""
     conn = get_connection()
     cur = conn.cursor()
@@ -451,8 +484,11 @@ async def get_profile(user_id: int):
         conn.close()
 
 @app.post("/profile/update/{user_id}")
-async def update_profile(user_id: int, request: Request):
+@limiter.limit("20/10second; 200/minute")
+async def update_profile(user_id: int, request: Request, token_user_id: int = Depends(Get_Current_User)): #user_id: int, request: Request):
     """تحديث الملف الشخصي"""
+    if token_user_id != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
     data = await request.json()
     conn = get_connection()
     cur = conn.cursor()
@@ -465,7 +501,7 @@ async def update_profile(user_id: int, request: Request):
                 "UPDATE users SET username = %s WHERE id = %s",
                 (data['username'], user_id)
             )
-            conn.commit
+            conn.commit()
             return {"status": "success", "message": "Profile updated successfully"}
         
 
@@ -480,7 +516,9 @@ async def update_profile(user_id: int, request: Request):
                 #that were actually sent in the request and are not None.
                 fields.append(f"{field} = %s")
                 values.append(data[field])
-        
+        #validate bio length    
+        if 'bio' in data and len(data['bio']) > 500:
+            return JSONResponse(status_code=400, content={"detail": "Bio too long"}) 
         if fields:
             #values.append(user_id)
             #use INSERT ... ON CONFLICT DO UPDATE (also known as "upsert") so that
@@ -506,8 +544,12 @@ async def update_profile(user_id: int, request: Request):
         conn.close()
 
 @app.post("/settings/update/{user_id}")
-async def update_settings(user_id: int, request: Request):
+@limiter.limit("20/10second; 200/minute")
+async def update_settings(user_id: int, request: Request, token_user_id: int = Depends(Get_Current_User)):
     """تحديث إعدادات المستخدم"""
+    if token_user_id != user_id:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    
     data = await request.json()
     print(f"Received data: {data}") 
     conn = get_connection()

@@ -143,7 +143,7 @@ def main():
     print_color("Starting Chat Application", Colors.BOLD)
     print_color("="*60, Colors.BLUE)
     
-    backend_path = Path(r"/home/mln/Projects/web/test/chat-app-v2/final-chat-project/file/chat_project/backend")
+    backend_path = Path(r"/home/mln/Projects/web/chat/final-chat-project/file/chat_project/backend")
     cloudflared_path ="cloudflared"
     #backend_path = Path(r"C:\Users\pc\Desktop\file\chat_project\backend")
     #cloudflared_path = Path(r"C:\Users\pc\Desktop\file\cloudflared")

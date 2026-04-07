@@ -104,7 +104,6 @@ async function updateProfileField(field, value) {
     try {
         const data = {};
 
-        //  Map frontend fields → backend fields
         const fieldMap = {
             username: "username",
             fullname: "full_name",
@@ -124,6 +123,16 @@ async function updateProfileField(field, value) {
             body: JSON.stringify(data)
         });
 
+        if (response.status === 429) {
+            showToast('Too many updates. Please wait 10 seconds.', true);
+            return;
+        }
+
+        if (response.status === 403) {
+            showToast('Unauthorized to update this profile', true);
+            return;
+        }
+
         const result = await response.json();
 
         if (result.status === 'success') {
@@ -140,7 +149,7 @@ async function updateProfileField(field, value) {
                     value || currentUsername;
             }
         } else {
-            showToast('Update failed', true);
+            showToast(result.detail || 'Update failed', true);
         }
 
     } catch (error) {
@@ -168,6 +177,16 @@ async function updateSetting(setting, value) {
             })
         });
 
+        if (response.status === 429) {
+            showToast('Too many setting updates. Please wait 10 seconds.', true);
+            return;
+        }
+
+        if (response.status === 403) {
+            showToast('Unauthorized to update settings', true);
+            return;
+        }
+
         const result = await response.json();
 
         if (result.status === 'success') {
@@ -177,7 +196,7 @@ async function updateSetting(setting, value) {
                 applyTheme(value);
             }
         } else {
-            showToast('Update failed', true);
+            showToast(result.detail || 'Update failed', true);
         }
 
     } catch (error) {
