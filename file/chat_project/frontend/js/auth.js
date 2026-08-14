@@ -40,11 +40,18 @@ async function login() {
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams({ username: user, password: pass })
         });
+        
+        if (res.status === 429) {
+            const retryAfter = res.headers.get('Retry-After') || 10;
+            document.getElementById('login-error').innerText = `Too many attempts. Please wait ${retryAfter} seconds.`;
+            return;
+        }
+        
         let data = await res.json();
         if (data.status === 'success') {
             userId = data.user_id;
             currentUsername = data.username;
-            saveSession(userId, { user_id: userId, username: currentUsername });
+            saveSession(data.token, { user_id: userId, username: currentUsername });
             requestNotificationPermission();
             document.getElementById('current-username').innerHTML = currentUsername;
             showScreen('chat-screen');
@@ -85,6 +92,13 @@ async function register() {
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams({ username: user, password: pass })
         });
+        
+        if (res.status === 429) {
+            const retryAfter = res.headers.get('Retry-After') || 10;
+            document.getElementById('register-error').innerText = `Too many attempts. Please wait ${retryAfter} seconds.`;
+            return;
+        }
+        
         let data = await res.json();
         if (data.status === 'success') {
             alert('Account created successfully');
